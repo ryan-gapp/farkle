@@ -36,6 +36,7 @@ def validate_kept_dice(kept_dice, rolled_dice):
 def farkle():
     print("Welcome to Farkle!")
     total_score = 0
+    first_turn = True  # Track if it's the player's first turn
 
     while True:
         print(f"\nYour total score: {total_score}")
@@ -51,14 +52,14 @@ def farkle():
             # Calculate score for this roll
             roll_score = calculate_score(rolled_dice)
 
-            # If it's the first roll, the player must score 500 or more to start scoring
-            if first_roll and roll_score < 500:
-                print("You must score at least 500 points on your first roll to start scoring.")
+            # On the first turn, the player must score at least 500 points to start scoring
+            if first_turn and roll_score < 500:
+                print("You must score at least 500 points on your first turn to start scoring.")
                 print("Farkle! You lose all points for this turn.")
                 turn_score = 0
                 break
 
-            # If it's not the first roll or the player has scored enough on the first roll, continue
+            # If it's not the first roll or the player has scored enough on the first turn, continue
             if roll_score == 0:
                 print("Farkle! You lose all points for this turn.")
                 turn_score = 0
@@ -95,6 +96,10 @@ def farkle():
 
             # Mark the first roll as completed
             first_roll = False
+
+        # If it's the first turn, mark it as completed
+        if first_turn:
+            first_turn = False
 
         total_score += turn_score
 

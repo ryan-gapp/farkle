@@ -14,6 +14,10 @@ def calculate_score(dice):
         if counts[num] >= 3:
             score += num * 100
 
+    # Scoring for three pairs
+    if len(dice) == 6 and len(set(dice)) == 3:  # 3 pairs in a set of 6 dice
+        score += 1500  # Three pairs score 1500 points
+
     return score
 
 # Function to roll dice
@@ -44,6 +48,7 @@ def farkle():
         turn_score = 0
         used_dice = []  # Keep track of used dice
         first_roll = True  # Track if it's the first roll of the turn
+        first_turn_completed = False  # Track if the first turn has been completed
 
         while dice_to_roll > 0:
             rolled_dice = roll_dice(dice_to_roll, used_dice)
@@ -52,34 +57,30 @@ def farkle():
             # Calculate score for this roll
             roll_score = calculate_score(rolled_dice)
 
-            # On the first turn, the player must score at least 500 points to start scoring
-            if first_turn and roll_score < 500:
-                print("You must score at least 500 points on your first turn to start scoring.")
-                print("Farkle! You lose all points for this turn.")
-                turn_score = 0
-                break
-
-            # If it's not the first roll or the player has scored enough on the first turn, continue
+            # If no points are scored (farkle), end the turn
             if roll_score == 0:
                 print("Farkle! You lose all points for this turn.")
                 turn_score = 0
                 break
 
+            # Add points for this roll
+            turn_score += roll_score
+            print(f"Points this turn: {turn_score}")
+
             # Let the player choose dice to keep
+            kept_dice = []
             while True:
                 try:
                     kept_input = input("Enter the dice you want to keep (comma-separated, e.g., 1,1,5): ")
                     kept_dice = [int(die) for die in kept_input.split(",")]
 
-                    if validate_kept_dice(kept_dice, rolled_dice):
+                    # Only allow keeping dice that scored points this roll
+                    if all(die in rolled_dice for die in kept_dice):
                         break
                     else:
                         print("Invalid selection. Please choose dice from the rolled dice.")
                 except ValueError:
                     print("Invalid input. Please enter numbers separated by commas.")
-
-            turn_score += calculate_score(kept_dice)
-            print(f"Points this turn: {turn_score}")
 
             # Update the used dice list
             used_dice.extend(kept_dice)
@@ -94,11 +95,16 @@ def farkle():
                 if choice != 'y':
                     break
 
+            # If it's the first turn, check if they have accumulated points
+            if first_turn and turn_score >= 500:
+                print("You have scored at least 500 points on your first turn!")
+                first_turn_completed = True  # Mark the first turn as completed
+
             # Mark the first roll as completed
             first_roll = False
 
-        # If it's the first turn, mark it as completed
-        if first_turn:
+        # If it's the first turn and it has been completed, allow the player to continue
+        if first_turn and first_turn_completed:
             first_turn = False
 
         total_score += turn_score

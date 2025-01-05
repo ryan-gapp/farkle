@@ -42,13 +42,24 @@ def farkle():
         dice_to_roll = 6
         turn_score = 0
         used_dice = []  # Keep track of used dice
+        first_roll = True  # Track if it's the first roll of the turn
 
         while dice_to_roll > 0:
             rolled_dice = roll_dice(dice_to_roll, used_dice)
             print(f"You rolled: {rolled_dice}")
 
-            # Check if the roll contains scoring dice
-            if calculate_score(rolled_dice) == 0:
+            # Calculate score for this roll
+            roll_score = calculate_score(rolled_dice)
+
+            # If it's the first roll, the player must score 500 or more to start scoring
+            if first_roll and roll_score < 500:
+                print("You must score at least 500 points on your first roll to start scoring.")
+                print("Farkle! You lose all points for this turn.")
+                turn_score = 0
+                break
+
+            # If it's not the first roll or the player has scored enough on the first roll, continue
+            if roll_score == 0:
                 print("Farkle! You lose all points for this turn.")
                 turn_score = 0
                 break
@@ -81,6 +92,9 @@ def farkle():
                 choice = input("Do you want to keep rolling the remaining dice? (y/n): ").lower()
                 if choice != 'y':
                     break
+
+            # Mark the first roll as completed
+            first_roll = False
 
         total_score += turn_score
 

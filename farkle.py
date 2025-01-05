@@ -17,8 +17,11 @@ def calculate_score(dice):
     return score
 
 # Function to roll dice
-def roll_dice(num_dice):
-    return [random.randint(1, 6) for _ in range(num_dice)]
+def roll_dice(num_dice, used_dice):
+    dice = [random.randint(1, 6) for _ in range(num_dice)]
+    while any(die in used_dice for die in dice):  # Re-roll any used dice
+        dice = [random.randint(1, 6) for _ in range(num_dice)]
+    return dice
 
 # Function to validate chosen dice
 def validate_kept_dice(kept_dice, rolled_dice):
@@ -38,9 +41,10 @@ def farkle():
         print(f"\nYour total score: {total_score}")
         dice_to_roll = 6
         turn_score = 0
-        
+        used_dice = []  # Keep track of used dice
+
         while dice_to_roll > 0:
-            rolled_dice = roll_dice(dice_to_roll)
+            rolled_dice = roll_dice(dice_to_roll, used_dice)
             print(f"You rolled: {rolled_dice}")
 
             # Check if the roll contains scoring dice
@@ -65,12 +69,14 @@ def farkle():
             turn_score += calculate_score(kept_dice)
             print(f"Points this turn: {turn_score}")
 
-            # Check if the player wants to stop or reroll
+            # Update the used dice list
+            used_dice.extend(kept_dice)
             dice_to_roll -= len(kept_dice)
 
             if dice_to_roll == 0:
                 print("You used all dice. Rolling 6 dice again!")
                 dice_to_roll = 6
+                used_dice = []  # Reset the used dice for a new round
             else:
                 choice = input("Do you want to keep rolling the remaining dice? (y/n): ").lower()
                 if choice != 'y':

@@ -1,119 +1,165 @@
 import random
 
-# Scoring rules
-def calculate_score(dice):
-    counts = {i: dice.count(i) for i in range(1, 7)}
-    score = 0
+# Function to roll a single die
+def roll_die():
+    return random.randint(1, 6)
 
-    # Scoring for ones and fives
-    score += counts[1] * 100 if counts[1] < 3 else (counts[1] - 3) * 100 + 1000
-    score += counts[5] * 50 if counts[5] < 3 else (counts[5] - 3) * 50 + 500
+# Function to initialize six dice
+def initialize_dice():
+    return [roll_die() for _ in range(6)]
 
-    # Scoring for triples of 2, 3, 4, and 6
-    for num in range(2, 7):
-        if counts[num] >= 3:
-            score += num * 100
-
-    # Scoring for three pairs
-    if len(dice) == 6 and len(set(dice)) == 3:  # 3 pairs in a set of 6 dice
-        score += 1500  # Three pairs score 1500 points
-
-    return score
-
-# Function to roll dice
-def roll_dice(num_dice, used_dice):
-    dice = [random.randint(1, 6) for _ in range(num_dice)]
-    while any(die in used_dice for die in dice):  # Re-roll any used dice
-        dice = [random.randint(1, 6) for _ in range(num_dice)]
-    return dice
-
-# Function to validate chosen dice
-def validate_kept_dice(kept_dice, rolled_dice):
-    rolled_copy = rolled_dice[:]
-    for die in kept_dice:
-        if die in rolled_copy:
-            rolled_copy.remove(die)
-        else:
-            return False
-    return True
-
-def farkle():
-    print("Welcome to Farkle!")
-    total_score = 0
-    first_turn = True  # Track if it's the player's first turn
-
+# Function to determine the first player
+def determine_first_player(players):
+    print("\nDetermining who goes first...")
     while True:
-        print(f"\nYour total score: {total_score}")
-        dice_to_roll = 6
-        turn_score = 0
-        used_dice = []  # Keep track of used dice
-        first_roll = True  # Track if it's the first roll of the turn
-        first_turn_completed = False  # Track if the first turn has been completed
+        rolls = {player: roll_die() for player in players}
+        for player, roll in rolls.items():
+            print(f"{player} rolled a {roll}")
+        max_roll = max(rolls.values())
+        tied_players = [player for player, roll in rolls.items() if roll == max_roll]
+        
+        if len(tied_players) == 1:
+            print(f"{tied_players[0]} goes first!")
+            return tied_players[0]
+        else:
+            print("It's a tie! Re-rolling for tied players...\n")
+            players = tied_players
 
-        while dice_to_roll > 0:
-            rolled_dice = roll_dice(dice_to_roll, used_dice)
-            print(f"You rolled: {rolled_dice}")
+# Function to display the current game state
+def display_state(first_list, second_list):
+    print(f"[Kept] {first_list} [Rollable] {second_list}")
 
-            # Calculate score for this roll
-            roll_score = calculate_score(rolled_dice)
+# Function to reset all dice to the second list
+def reset_dice(first_list, second_list):
+    second_list.extend(first_list)
+    first_list.clear()
 
-            # If no points are scored (farkle), end the turn
-            if roll_score == 0:
-                print("Farkle! You lose all points for this turn.")
-                turn_score = 0
+# Parse dice numbers entered by the player
+def parse_input(input_string):
+    input_string = input_string.replace(",", "").replace(" ", "")
+    return [int(char) for char in input_string if char.isdigit()]
+
+# Main game logic
+def start_game():
+    # Setup players
+    num_players = int(input("Enter the number of players: "))
+    players = [input(f"Enter the name of player {i + 1}: ") for i in range(num_players)]
+    
+    # Determine who goes first
+    first_player = determine_first_player(players)
+    current_player_index = players.index(first_player)
+
+    # Initialize scores
+    player_points = {player: 0 for player in players}
+    
+    # Main game loop
+    while True:
+        current_player = players[current_player_index]
+        print(f"\n{current_player}'s turn!")
+        
+        # At the beginning of each turn, reset the dice
+        first_list = []
+        second_list = initialize_dice()
+        display_state(first_list, second_list)
+        
+        while True:
+            command = input("Enter 'r' to roll, numbers to move dice, 'turn' to end turn, or 'reset': ").strip()
+            
+            if command == "r":
+                # Roll all dice in the second list
+                second_list = [roll_die() for _ in second_list]
+                print("------ROLLED------")
+            elif command == "reset":
+                # Reset all dice to the second list
+                reset_dice(first_list, second_list)
+            elif command == "turn":
+                # End the current turn
+                turn_points = int(input(f"Enter turn points for {current_player}: "))
+                if player_points[current_player] == 0 and turn_points < 500:
+                    print(f"{current_player} must score at least 500 points to get on the board.")
+                else:
+                    player_points[current_player] += turn_points
+                    print(f"{current_player} now has {player_points[current_player]} points.\n")
+                print("Game scores:")
+                for player, points in player_points.items():
+                    print(f"{player}: {points} points")
                 break
-
-            # Add points for this roll
-            turn_score += roll_score
-            print(f"Points this turn: {turn_score}")
-
-            # Let the player choose dice to keep
-            kept_dice = []
-            while True:
-                try:
-                    kept_input = input("Enter the dice you want to keep (comma-separated, e.g., 1,1,5): ")
-                    kept_dice = [int(die) for die in kept_input.split(",")]
-
-                    # Only allow keeping dice that scored points this roll
-                    if all(die in rolled_dice for die in kept_dice):
-                        break
-                    else:
-                        print("Invalid selection. Please choose dice from the rolled dice.")
-                except ValueError:
-                    print("Invalid input. Please enter numbers separated by commas.")
-
-            # Update the used dice list
-            used_dice.extend(kept_dice)
-            dice_to_roll -= len(kept_dice)
-
-            if dice_to_roll == 0:
-                print("You used all dice. Rolling 6 dice again!")
-                dice_to_roll = 6
-                used_dice = []  # Reset the used dice for a new round
             else:
-                choice = input("Do you want to keep rolling the remaining dice? (y/n): ").lower()
-                if choice != 'y':
-                    break
-
-            # If it's the first turn, check if they have accumulated points
-            if first_turn and turn_score >= 500:
-                print("You have scored at least 500 points on your first turn!")
-                first_turn_completed = True  # Mark the first turn as completed
-
-            # Mark the first roll as completed
-            first_roll = False
-
-        # If it's the first turn and it has been completed, allow the player to continue
-        if first_turn and first_turn_completed:
-            first_turn = False
-
-        total_score += turn_score
-
-        # Ask the player if they want to continue playing
-        keep_playing = input("Do you want to play another turn? (y/n): ").lower()
-        if keep_playing != 'y':
-            print(f"Game over! Your final score is {total_score}.")
+                # Attempt to move dice from second to first
+                try:
+                    numbers = parse_input(command)
+                    for num in numbers:
+                        if num in second_list:
+                            second_list.remove(num)
+                            first_list.append(num)
+                except ValueError:
+                    print("Invalid input. Please enter 'r', numbers, 'turn', or 'reset'.")
+            
+            # Check if all six dice are in the first list
+            if len(first_list) == 6:
+                print("All six dice are in the first list. Moving them back to the second list.")
+                reset_dice(first_list, second_list)
+            
+            # Display the updated game state
+            display_state(first_list, second_list)
+        
+        # Check for winner
+        winner = None
+        for player, points in player_points.items():
+            if points >= 10000:
+                winner = player
+                break
+        
+        # If someone has won, initiate final round
+        if winner:
+            print(f"\n{winner} has reached 10,000 points! Final round begins.")
+            print(f"Other players have one turn to try to beat {winner}'s score.")
+            
+            # Final round for other players
+            for player in players:
+                if player != winner:
+                    first_list = []
+                    second_list = initialize_dice()
+                    print(f"\n{player}'s turn in the final round!")
+                    while True:
+                        command = input("Enter 'r' to roll, numbers to move dice, 'turn' to end turn, or 'reset': ").strip()
+                        
+                        if command == "r":
+                            second_list = [roll_die() for _ in second_list]
+                            print("------ROLLED------")
+                        elif command == "reset":
+                            reset_dice(first_list, second_list)
+                        elif command == "turn":
+                            turn_points = int(input(f"Enter points for {player}: "))
+                            player_points[player] += turn_points
+                            print(f"{player} now has {player_points[player]} points.\n")
+                            break
+                        else:
+                            try:
+                                numbers = parse_input(command)
+                                for num in numbers:
+                                    if num in second_list:
+                                        second_list.remove(num)
+                                        first_list.append(num)
+                            except ValueError:
+                                print("Invalid input. Please enter 'r', numbers, 'turn', or 'reset'.")
+                        
+                        # Check if all six dice are in the first list
+                        if len(first_list) == 6:
+                            print("All six dice are in the first list. Moving them back to the second list.")
+                            reset_dice(first_list, second_list)
+                        
+                        # Display the updated game state
+                        display_state(first_list, second_list)
+            
+            # Determine the final winner
+            final_winner = max(player_points, key=player_points.get)
+            print(f"\nThe final winner is {final_winner} with {player_points[final_winner]} points!")
             break
+        
+        # Move to the next player
+        current_player_index = (current_player_index + 1) % num_players
 
+# Start the game
 if __name__ == "__main__":
-    farkle()
+    start_game()
